@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2024 Contributors to the Eclipse Foundation
 #
 # This program and the accompanying materials are made available under the
 # terms of the Apache License, Version 2.0 which is available at
@@ -12,116 +12,70 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""A sample skeleton vehicle app."""
-
 import asyncio
-import json
 import logging
-import signal
-
+import firebase_admin
+from firebase_admin import credentials, firestore
 from vehicle import Vehicle, vehicle  # type: ignore
-from velocitas_sdk.util.log import (  # type: ignore
+from velocitas_sdk.util.log import (
     get_opentelemetry_log_factory,
     get_opentelemetry_log_format,
-)
+)  # type: ignore
 from velocitas_sdk.vdb.reply import DataPointReply
-from velocitas_sdk.vehicle_app import VehicleApp, subscribe_topic
+from velocitas_sdk.vehicle_app import VehicleApp
 
-# Configure the VehicleApp logger with the necessary log config and level.
+# Configure logger with OpenTelemetry
 logging.setLogRecordFactory(get_opentelemetry_log_factory())
 logging.basicConfig(format=get_opentelemetry_log_format())
-logging.getLogger().setLevel("DEBUG")
+logging.getLogger().setLevel("INFO")
 logger = logging.getLogger(__name__)
 
-GET_SPEED_REQUEST_TOPIC = "sampleapp/getSpeed"
-GET_SPEED_RESPONSE_TOPIC = "sampleapp/getSpeed/response"
-DATABROKER_SUBSCRIPTION_TOPIC = "sampleapp/currentSpeed"
+# Firebase setup
+cred = credentials.Certificate("app/src/firebase/admin_cred.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
+# MQTT topic configuration
+VEHICLE_SPEED_TOPIC = "vehicle/speed"
 
 
-class SampleApp(VehicleApp):
+class FirebaseSpeedSubscriberApp(VehicleApp):
     """
-    Sample skeleton vehicle app.
-
-    The skeleton subscribes to a getSpeed MQTT topic
-    to listen for incoming requests to get
-    the current vehicle speed and publishes it to
-    a response topic.
-
-    It also subcribes to the VehicleDataBroker
-    directly for updates of the
-    Vehicle.Speed signal and publishes this
-    information via another specific MQTT topic
+    FirebaseSpeedSubscriberApp listens for speed data on the MQTT topic "vehicle/speed"
+    and writes it to Firebase Firestore.
     """
 
     def __init__(self, vehicle_client: Vehicle):
-        # SampleApp inherits from VehicleApp.
         super().__init__()
-        self.Vehicle = vehicle_client
+        self.vehicle = vehicle_client
 
     async def on_start(self):
-        """Run when the vehicle app starts"""
-        # This method will be called by the SDK when the connection to the
-        # Vehicle DataBroker is ready.
-        # Here you can subscribe for the Vehicle Signals update (e.g. Vehicle Speed).
-        await self.Vehicle.Speed.subscribe(self.on_speed_change)
-
-    async def on_speed_change(self, data: DataPointReply):
-        """The on_speed_change callback, this will be executed when receiving a new
-        vehicle signal updates."""
-        # Get the current vehicle speed value from the received DatapointReply.
-        # The DatapointReply containes the values of all subscribed DataPoints of
-        # the same callback.
-        vehicle_speed = data.get(self.Vehicle.Speed).value
-
-        # Do anything with the received value.
-        # Example:
-        # - Publishes current speed to MQTT Topic (i.e. DATABROKER_SUBSCRIPTION_TOPIC).
-        await self.publish_event(
-            DATABROKER_SUBSCRIPTION_TOPIC,
-            json.dumps({"speed": vehicle_speed}),
+        """This method is called when the app starts."""
+        logger.info(
+            "FirebaseSpeedSubscriberApp started and waiting for speed updates on MQTT topic..."
         )
+        await self.vehicle.Speed.subscribe(self.on_speed_changed)
 
-    @subscribe_topic(GET_SPEED_REQUEST_TOPIC)
-    async def on_get_speed_request_received(self, data: str) -> None:
-        """The subscribe_topic annotation is used to subscribe for incoming
-        PubSub events, e.g. MQTT event for GET_SPEED_REQUEST_TOPIC.
-        """
+    async def on_speed_changed(self, data: DataPointReply):
+        speed = data.get(self.vehicle.Speed).value
+        await self.update_speed_in_firebase(speed)
 
-        # Use the logger with the preferred log level (e.g. debug, info, error, etc)
-        logger.debug(
-            "PubSub event for the Topic: %s -> is received with the data: %s",
-            GET_SPEED_REQUEST_TOPIC,
-            data,
-        )
-
-        # Getting current speed from VehicleDataBroker using the DataPoint getter.
-        vehicle_speed = (await self.Vehicle.Speed.get()).value
-
-        # Do anything with the speed value.
-        # Example:
-        # - Publishes the vehicle speed to MQTT topic (i.e. GET_SPEED_RESPONSE_TOPIC).
-        await self.publish_event(
-            GET_SPEED_RESPONSE_TOPIC,
-            json.dumps(
-                {
-                    "result": {
-                        "status": 0,
-                        "message": f"""Current Speed = {vehicle_speed}""",
-                    },
-                }
-            ),
-        )
+    async def update_speed_in_firebase(self, speed):
+        """Updates the latest vehicle speed in Firebase Firestore."""
+        try:
+            doc_ref = db.collection("SDV").document("Vehicle")
+            doc_ref.update({"speed": speed})
+            logger.info(f"Vehicle speed updated in Firebase to: {speed} km/h")
+        except Exception as e:
+            logger.error(f"Failed to update Firebase with speed: {e}")
 
 
 async def main():
-    """Main function"""
-    logger.info("Starting SampleApp...")
-    # Constructing SampleApp and running it.
-    vehicle_app = SampleApp(vehicle)
+    """Main entry point for the Vehicle App."""
+    logger.info("Starting FirebaseSpeedSubscriberApp...")
+    vehicle_app = FirebaseSpeedSubscriberApp(vehicle)
     await vehicle_app.run()
 
 
-LOOP = asyncio.get_event_loop()
-LOOP.add_signal_handler(signal.SIGTERM, LOOP.stop)
-LOOP.run_until_complete(main())
-LOOP.close()
+if __name__ == "__main__":
+    asyncio.run(main())
