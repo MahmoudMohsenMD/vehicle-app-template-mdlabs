@@ -67,16 +67,20 @@ class FirebaseSpeedSubscriberApp(VehicleApp):
         # Check if the file already exists
         if os.path.exists(file_path):
             print(f"{file_path} already exists. Skipping creation.")
-            return
+            os.remove(file_path)
 
         b = "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAic2R2LWRiIiwKICAicHJpdmF0ZV9rZXlfaWQiOiAiNjIzZDgwN2E5NDQ4N2VkNDE0MTMzMzZlNTA1N2U1MzJjNDY5OGQ5NCIsCiAgImNsaWVudF9lbWFpbCI6ICJmaXJlYmFzZS1hZG1pbnNkay0xaGFtMEBzZHYtZGIuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLAogICJjbGllbnRfaWQiOiAiMTA1MjkzOTk0MTE5MTcyODI1MjM1IiwKICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLAogICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9vYXV0aDIuZ29vZ2xlYXBpcy5jb20vdG9rZW4iLAogICJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzIiwKICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS9maXJlYmFzZS1hZG1pbnNkay0xaGFtMCU0MHNkdi1kYi5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsCiAgInVuaXZlcnNlX2RvbWFpbiI6ICJnb29nbGVhcGlzLmNvbSIKfQo="
 
         data = self.decode_base64(b)
         # print(data)
+        fb_id = os.getenv("FIREBASE_PRIVATE_KEY_ID")
+        fb_key = os.getenv("FIREBASE_PRIVATE_KEY")
+
         data = json.loads(data)
-        data[
-            "private_key"
-        ] = "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCcZU8Loz4M2WbX\nrSfYtM2eZ4CcnjrKwTeuAYOMgnQRuhJ+lchQLpko5Xdk2Ij49IM9PZgCbKgga4Ms\ndwuhUjo5pPUZGEJy4g8kTusqM+3m5/d/dmMvUPErFn24X/r9/YVXkhOXrhStC/CR\ne8g1tE9MZ5A0NNrnVd5GL2ARnhnPwmrJ/CaxFh7dJnMzlSUabxSBCIXTaLuqlb5M\nz/J+9xAgHOWIfYpfIFymV4WKbqfSF6Kot70cz9VRWrA2CBAcI1n8oXuTpDEVfFbh\nctqRgNTIQmScEqV/ySfZsEm2eDGX/iM2YmhbTcMOBEJNIEFdPx366U/itY6m5a6s\n2fZZ4NyNAgMBAAECggEAGUf/KSBwTV9vUnn5MPy5KFwO3EJvuorVV1mDTFliLeNo\nTfIkeWGu/H9rd2/RZH0SIfos8mdiHiuC/tMXnDJQmzThMfdL9oo4bGQde6r9UBA7\nX+1hRyrMcWynUgCh8CDlRyyj4icPzJFbiAj8akIFd5JeKzJIGJE25x2NaAuonH7O\nVxS5f0iPFxoJ/S9tsp0YtYvY/9xDR5EBdTvS4lALBs6/YtPM5287I+kCUuaJYSjc\nMznue6gsRrCwsBulF8ueI+TQNEEoZOea0hbyzAohyJt8p59VGLEFdIDF/UQJmmRp\nr6Z2Tp+oD0f6FrM05LiB5SGYLCUWamCfsHq2RVetOQKBgQDJpz2BnGFMCgtXlOBY\n5njJ5KLw1wd8aKpIQp+5oEXTktpJEanY/ATyOZ1CPQeyet1J+svs9uShAa+Mzjgk\nInX02uBXQl+ORakG4iFICVZ4ovZI1UjoH7sKRRAOZVg7lcgWIftENtmBVPEr6QcU\nD2ug5+pMTgQzDXivI5mpnPEXbwKBgQDGi5frTZaoNNlB0ZxrG8c8MXqj7TjpuAeQ\nX5p+zIvk3KusnczJz9g5ZCtxv7p26zTN087e8mJKCduUSIj+ZvscKp++dkFh2xYP\n0tAgEHrVGI5WX4I+USq5ETaSdB1Uh76UTatiEwIWJ9gkGaPX6HIjewNVBZuYmo+A\n72jUcfqtwwKBgQDEvUog3jV/Pn16YWHQ2msWbt8aInDHTEZ2Yan8LQZzOV+G0pjn\nflpFCTkImwqbc4va1bmH5AmDnGVt9vSHLKfw0Gr4N2WLJSOX95+I7LNU14l53b1X\n2z1c86yKnw3KdIPWNCk1kF389KantJ6XT8QuJJZPA/7M4GPSW+VbuibuOQKBgDLe\nWwr/cwUfnTY+1RugH1ituKU9RyKictWrmPK5x3HYk+eC+pAOP3Dc2ECphcWoF3xQ\nsyTt5v7fLbH9L5Q2oEmkJg9vTusabbmaIpbEgiQMyZMZn04GD7Mg1OGK/GTG7q4i\nhDF5e0Rf6wG8y/yqYmvyvXTQHgBoQTIgpLQhi79vAoGAKb2xoeMJpy1zTDd91yls\n801l6GsYD7O3ocedoMUGl3FVNhhE5vQXMROgLvth2p7mYTHzVazBUeG6GBRuDavl\nff33wMbcqbJ7WWJ2GYMTzGgq3zYFm+NXJFzSQpW1Z3G5UQ+c8pa1XGdy4CyB3erS\ngkDkv6KkWuZQpjHHt/jhFJM=\n-----END PRIVATE KEY-----\n"
+
+        data["private_key_id"] = fb_id
+        data["private_key"] = fb_key
+
         print(data)
         # Ensure the directory exists
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
