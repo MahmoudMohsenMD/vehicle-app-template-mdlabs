@@ -1,6 +1,6 @@
 {
     "manifestVersion": "v3",
-    "name": "FirebaseSpeedSubscriberApp",
+    "name": "SampleApp",
     "interfaces": [
         {
             "type": "vehicle-signal-interface",
