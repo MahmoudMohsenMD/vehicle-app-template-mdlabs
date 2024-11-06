@@ -144,8 +144,6 @@ jobs:
     uses: ./.github/workflows/build-docker-image.yml
     needs: [get-app-name]
     with:
-      max_attempts: 10
-      timeout_minutes: 10
       platform: amd64
       app_name: ${{ needs.get-app-name.outputs.app_name }}
 
