@@ -15,7 +15,9 @@
             "env": {
                 "SDV_MIDDLEWARE_TYPE": "native",
                 "SDV_VEHICLEDATABROKER_ADDRESS": "grpc://127.0.0.1:55555",
-                "SDV_MQTT_ADDRESS": "mqtt://127.0.0.1:1883"
+                "SDV_MQTT_ADDRESS": "mqtt://127.0.0.1:1883",
+                "FIREBASE_PRIVATE_KEY_ID": "ID",
+                "FIREBASE_PRIVATE_KEY": "KEY"
             }
         }
     ]
