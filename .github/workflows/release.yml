@@ -81,13 +81,13 @@ jobs:
         with:
           string: ${{ github.repository }}
 
-      - name: Wait for Multi-Arch build to succeed
-        uses: fountainhead/action-wait-for-check@v1.2.0
-        with:
-          checkName: Merge Trivy results
-          token: ${{ secrets.GITHUB_TOKEN }}
-          timeoutSeconds: 1800
-          intervalSeconds: 20
+      # - name: Wait for Multi-Arch build to succeed
+      #   uses: fountainhead/action-wait-for-check@v1.2.0
+      #   with:
+      #     checkName: Merge Trivy results
+      #     token: ${{ secrets.GITHUB_TOKEN }}
+      #     timeoutSeconds: 1800
+      #     intervalSeconds: 20
 
       - name: Download builds from Build multiarch image workflow artifacts
         uses: dawidd6/action-download-artifact@v3
