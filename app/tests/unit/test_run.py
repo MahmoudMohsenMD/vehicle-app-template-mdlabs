@@ -177,9 +177,11 @@
 
 import pytest
 
+
 def test_acceptance_dummy():
     """Dummy test that always passes."""
     assert True
+
 
 @pytest.mark.asyncio
 async def test_async_acceptance_dummy():
