@@ -49,7 +49,7 @@ class FirebaseSpeedSubscriberApp(VehicleApp):
     def __init__(self, vehicle_client: Vehicle):
         super().__init__()
         self.vehicle = vehicle_client
-        # self.create_firebase_service_account_json()
+        self.create_firebase_service_account_json()
         cred = credentials.Certificate("app/src/firebase/admin_cred.json")
         firebase_admin.initialize_app(cred)
         self.db = firestore.client()
@@ -70,11 +70,15 @@ class FirebaseSpeedSubscriberApp(VehicleApp):
             os.remove(file_path)
 
         b = "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAic2R2LWRiIiwKICAicHJpdmF0ZV9rZXlfaWQiOiAiNjIzZDgwN2E5NDQ4N2VkNDE0MTMzMzZlNTA1N2U1MzJjNDY5OGQ5NCIsCiAgImNsaWVudF9lbWFpbCI6ICJmaXJlYmFzZS1hZG1pbnNkay0xaGFtMEBzZHYtZGIuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLAogICJjbGllbnRfaWQiOiAiMTA1MjkzOTk0MTE5MTcyODI1MjM1IiwKICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLAogICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9vYXV0aDIuZ29vZ2xlYXBpcy5jb20vdG9rZW4iLAogICJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzIiwKICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS9maXJlYmFzZS1hZG1pbnNkay0xaGFtMCU0MHNkdi1kYi5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsCiAgInVuaXZlcnNlX2RvbWFpbiI6ICJnb29nbGVhcGlzLmNvbSIKfQo="
+        key1 = os.getenv("FBKEY")
+        key2 = os.getenv("FBKEY2")
+        key1_raw = str(key1).replace("\\", "\\\\")
+        key2_raw = str(key2).replace("\\", "\\\\")
 
         data = self.decode_base64(b)
         # print(data)
-        fb_id = os.getenv("FIREBASE_PRIVATE_KEY_ID")
-        fb_key = os.getenv("FIREBASE_PRIVATE_KEY")
+        fb_id = os.getenv("FB_PRIVATE_ID")
+        fb_key = str(key1_raw) + str(key2_raw)
 
         data = json.loads(data)
 
