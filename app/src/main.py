@@ -14,10 +14,10 @@
 
 import asyncio
 import logging
-import firebase_admin
+import firebase_admin  # type: ignore
 from firebase_admin import credentials, firestore
 from vehicle import Vehicle, vehicle  # type: ignore
-from velocitas_sdk.util.log import (
+from velocitas_sdk.util.log import (  # type: ignore
     get_opentelemetry_log_factory,
     get_opentelemetry_log_format,
 )  # type: ignore
