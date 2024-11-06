@@ -70,20 +70,20 @@ class FirebaseSpeedSubscriberApp(VehicleApp):
             os.remove(file_path)
 
         b = "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAic2R2LWRiIiwKICAicHJpdmF0ZV9rZXlfaWQiOiAiNjIzZDgwN2E5NDQ4N2VkNDE0MTMzMzZlNTA1N2U1MzJjNDY5OGQ5NCIsCiAgImNsaWVudF9lbWFpbCI6ICJmaXJlYmFzZS1hZG1pbnNkay0xaGFtMEBzZHYtZGIuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLAogICJjbGllbnRfaWQiOiAiMTA1MjkzOTk0MTE5MTcyODI1MjM1IiwKICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLAogICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9vYXV0aDIuZ29vZ2xlYXBpcy5jb20vdG9rZW4iLAogICJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzIiwKICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS9maXJlYmFzZS1hZG1pbnNkay0xaGFtMCU0MHNkdi1kYi5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsCiAgInVuaXZlcnNlX2RvbWFpbiI6ICJnb29nbGVhcGlzLmNvbSIKfQo="
-        key1 = os.getenv("FBKEY")
-        key2 = os.getenv("FBKEY2")
-        key1_raw = str(key1).replace("\\", "\\\\")
-        key2_raw = str(key2).replace("\\", "\\\\")
-
         data = self.decode_base64(b)
-        # print(data)
-        fb_id = os.getenv("FB_PRIVATE_ID")
-        fb_key = str(key1_raw) + str(key2_raw)
-
         data = json.loads(data)
 
+        # Retrieve environment variables and replace \n to make it an actual newline
+        key1 = os.getenv("FBKEY", "").replace("\\n", "\n")
+        key2 = os.getenv("FBKEY2", "").replace("\\n", "\n")
+        fb_id = os.getenv("FB_PRIVATE_ID", "")
+
+        # Concatenate the keys into a single private key
+        private_key = key1 + key2
+
+        # Insert the values into the JSON structure
         data["private_key_id"] = fb_id
-        data["private_key"] = fb_key
+        data["private_key"] = private_key
 
         print(data)
         # Ensure the directory exists
