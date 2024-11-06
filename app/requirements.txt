@@ -77,5 +77,7 @@ yarl==1.11.1
 zipp==3.20.2
     # via importlib-metadata
 
+
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
+firebase-admin
