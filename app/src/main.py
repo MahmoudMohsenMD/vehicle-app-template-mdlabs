@@ -49,7 +49,7 @@ class FirebaseSpeedSubscriberApp(VehicleApp):
     def __init__(self, vehicle_client: Vehicle):
         super().__init__()
         self.vehicle = vehicle_client
-        self.create_firebase_service_account_json()
+        # self.create_firebase_service_account_json()
         cred = credentials.Certificate("app/src/firebase/admin_cred.json")
         firebase_admin.initialize_app(cred)
         self.db = firestore.client()
