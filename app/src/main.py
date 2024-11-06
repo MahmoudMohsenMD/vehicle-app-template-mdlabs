@@ -25,6 +25,7 @@ from velocitas_sdk.vdb.reply import DataPointReply
 from velocitas_sdk.vehicle_app import VehicleApp
 import json
 import os
+import base64
 
 # Configure logger with OpenTelemetry
 logging.setLogRecordFactory(get_opentelemetry_log_factory())
@@ -68,20 +69,9 @@ class FirebaseSpeedSubscriberApp(VehicleApp):
             print(f"{file_path} already exists. Skipping creation.")
             return
 
-        data = {
-            "type": "service_account",
-            "project_id": "sdv-db",
-            "private_key_id": "623d807a94487ed41413336e5057e532c4698d94",
-            "private_key": """-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCcZU8Loz4M2WbX\nrSfYtM2eZ4CcnjrKwTeuAYOMgnQRuhJ+lchQLpko5Xdk2Ij49IM9PZgCbKgga4Ms\ndwuhUjo5pPUZGEJy4g8kTusqM+3m5/d/dmMvUPErFn24X/r9/YVXkhOXrhStC/CR\ne8g1tE9MZ5A0NNrnVd5GL2ARnhnPwmrJ/CaxFh7dJnMzlSUabxSBCIXTaLuqlb5M\nz/J+9xAgHOWIfYpfIFymV4WKbqfSF6Kot70cz9VRWrA2CBAcI1n8oXuTpDEVfFbh\nctqRgNTIQmScEqV/ySfZsEm2eDGX/iM2YmhbTcMOBEJNIEFdPx366U/itY6m5a6s\n2fZZ4NyNAgMBAAECggEAGUf/KSBwTV9vUnn5MPy5KFwO3EJvuorVV1mDTFliLeNo\nTfIkeWGu/H9rd2/RZH0SIfos8mdiHiuC/tMXnDJQmzThMfdL9oo4bGQde6r9UBA7\nX+1hRyrMcWynUgCh8CDlRyyj4icPzJFbiAj8akIFd5JeKzJIGJE25x2NaAuonH7O\nVxS5f0iPFxoJ/S9tsp0YtYvY/9xDR5EBdTvS4lALBs6/YtPM5287I+kCUuaJYSjc\nMznue6gsRrCwsBulF8ueI+TQNEEoZOea0hbyzAohyJt8p59VGLEFdIDF/UQJmmRp\nr6Z2Tp+oD0f6FrM05LiB5SGYLCUWamCfsHq2RVetOQKBgQDJpz2BnGFMCgtXlOBY\n5njJ5KLw1wd8aKpIQp+5oEXTktpJEanY/ATyOZ1CPQeyet1J+svs9uShAa+Mzjgk\nInX02uBXQl+ORakG4iFICVZ4ovZI1UjoH7sKRRAOZVg7lcgWIftENtmBVPEr6QcU\nD2ug5+pMTgQzDXivI5mpnPEXbwKBgQDGi5frTZaoNNlB0ZxrG8c8MXqj7TjpuAeQ\nX5p+zIvk3KusnczJz9g5ZCtxv7p26zTN087e8mJKCduUSIj+ZvscKp++dkFh2xYP\n0tAgEHrVGI5WX4I+USq5ETaSdB1Uh76UTatiEwIWJ9gkGaPX6HIjewNVBZuYmo+A\n72jUcfqtwwKBgQDEvUog3jV/Pn16YWHQ2msWbt8aInDHTEZ2Yan8LQZzOV+G0pjn\nflpFCTkImwqbc4va1bmH5AmDnGVt9vSHLKfw0Gr4N2WLJSOX95+I7LNU14l53b1X\n2z1c86yKnw3KdIPWNCk1kF389KantJ6XT8QuJJZPA/7M4GPSW+VbuibuOQKBgDLe\nWwr/cwUfnTY+1RugH1ituKU9RyKictWrmPK5x3HYk+eC+pAOP3Dc2ECphcWoF3xQ\nsyTt5v7fLbH9L5Q2oEmkJg9vTusabbmaIpbEgiQMyZMZn04GD7Mg1OGK/GTG7q4i\nhDF5e0Rf6wG8y/yqYmvyvXTQHgBoQTIgpLQhi79vAoGAKb2xoeMJpy1zTDd91yls\n801l6GsYD7O3ocedoMUGl3FVNhhE5vQXMROgLvth2p7mYTHzVazBUeG6GBRuDavl\nff33wMbcqbJ7WWJ2GYMTzGgq3zYFm+NXJFzSQpW1Z3G5UQ+c8pa1XGdy4CyB3erS\ngkDkv6KkWuZQpjHHt/jhFJM=\n-----END PRIVATE KEY-----\n""",
-            "client_email": "firebase-adminsdk-1ham0@sdv-db.iam.gserviceaccount.com",
-            "client_id": "105293994119172825235",
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-            "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-1ham0%40sdv-db.iam.gserviceaccount.com",
-            "universe_domain": "googleapis.com",
-        }
+        b = "ewogICAgICAgICAgICAidHlwZSI6ICJzZXJ2aWNlX2FjY291bnQiLAogICAgICAgICAgICAicHJvamVjdF9pZCI6ICJzZHYtZGIiLAogICAgICAgICAgICAicHJpdmF0ZV9rZXlfaWQiOiAiNjIzZDgwN2E5NDQ4N2VkNDE0MTMzMzZlNTA1N2U1MzJjNDY5OGQ5NCIsCiAgICAgICAgICAgICJwcml2YXRlX2tleSI6ICIiIi0tLS0tQkVHSU4gUFJJVkFURSBLRVktLS0tLVxuTUlJRXZRSUJBREFOQmdrcWhraUc5dzBCQVFFRkFBU0NCS2N3Z2dTakFnRUFBb0lCQVFDY1pVOExvejRNMldiWFxuclNmWXRNMmVaNENjbmpyS3dUZXVBWU9NZ25RUnVoSitsY2hRTHBrbzVYZGsySWo0OUlNOVBaZ0NiS2dnYTRNc1xuZHd1aFVqbzVwUFVaR0VKeTRnOGtUdXNxTSszbTUvZC9kbU12VVBFckZuMjRYL3I5L1lWWGtoT1hyaFN0Qy9DUlxuZThnMXRFOU1aNUEwTk5yblZkNUdMMkFSbmhuUHdtckovQ2F4Rmg3ZEpuTXpsU1VhYnhTQkNJWFRhTHVxbGI1TVxuei9KKzl4QWdIT1dJZllwZklGeW1WNFdLYnFmU0Y2S290NzBjejlWUldyQTJDQkFjSTFuOG9YdVRwREVWZkZiaFxuY3RxUmdOVElRbVNjRXFWL3lTZlpzRW0yZURHWC9pTTJZbWhiVGNNT0JFSk5JRUZkUHgzNjZVL2l0WTZtNWE2c1xuMmZaWjROeU5BZ01CQUFFQ2dnRUFHVWYvS1NCd1RWOXZVbm41TVB5NUtGd08zRUp2dW9yVlYxbURURmxpTGVOb1xuVGZJa2VXR3UvSDlyZDIvUlpIMFNJZm9zOG1kaUhpdUMvdE1YbkRKUW16VGhNZmRMOW9vNGJHUWRlNnI5VUJBN1xuWCsxaFJ5ck1jV3luVWdDaDhDRGxSeXlqNGljUHpKRmJpQWo4YWtJRmQ1SmVLekpJR0pFMjV4Mk5hQXVvbkg3T1xuVnhTNWYwaVBGeG9KL1M5dHNwMFl0WXZZLzl4RFI1RUJkVHZTNGxBTEJzNi9ZdFBNNTI4N0kra0NVdWFKWVNqY1xuTXpudWU2Z3NSckN3c0J1bEY4dWVJK1RRTkVFb1pPZWEwaGJ5ekFvaHlKdDhwNTlWR0xFRmRJREYvVVFKbW1ScFxucjZaMlRwK29EMGY2RnJNMDVMaUI1U0dZTENVV2FtQ2ZzSHEyUlZldE9RS0JnUURKcHoyQm5HRk1DZ3RYbE9CWVxuNW5qSjVLTHcxd2Q4YUtwSVFwKzVvRVhUa3RwSkVhblkvQVR5T1oxQ1BRZXlldDFKK3N2czl1U2hBYStNempna1xuSW5YMDJ1QlhRbCtPUmFrRzRpRklDVlo0b3ZaSTFVam9IN3NLUlJBT1pWZzdsY2dXSWZ0RU50bUJWUEVyNlFjVVxuRDJ1ZzUrcE1UZ1F6RFhpdkk1bXBuUEVYYndLQmdRREdpNWZyVFphb05ObEIwWnhyRzhjOE1YcWo3VGpwdUFlUVxuWDVwK3pJdmszS3VzbmN6Sno5ZzVaQ3R4djdwMjZ6VE4wODdlOG1KS0NkdVVTSWorWnZzY0twKytka0ZoMnhZUFxuMHRBZ0VIclZHSTVXWDRJK1VTcTVFVGFTZEIxVWg3NlVUYXRpRXdJV0o5Z2tHYVBYNkhJamV3TlZCWnVZbW8rQVxuNzJqVWNmcXR3d0tCZ1FERXZVb2czalYvUG4xNllXSFEybXNXYnQ4YUluREhURVoyWWFuOExRWnpPVitHMHBqblxuZmxwRkNUa0ltd3FiYzR2YTFibUg1QW1EbkdWdDl2U0hMS2Z3MEdyNE4yV0xKU09YOTUrSTdMTlUxNGw1M2IxWFxuMnoxYzg2eUtudzNLZElQV05DazFrRjM4OUthbnRKNlhUOFF1SkpaUEEvN000R1BTVytWYnVpYnVPUUtCZ0RMZVxuV3dyL2N3VWZuVFkrMVJ1Z0gxaXR1S1U5UnlLaWN0V3JtUEs1eDNIWWsrZUMrcEFPUDNEYzJFQ3BoY1dvRjN4UVxuc3lUdDV2N2ZMYkg5TDVRMm9FbWtKZzl2VHVzYWJibWFJcGJFZ2lRTXlaTVpuMDRHRDdNZzFPR0svR1RHN3E0aVxuaERGNWUwUmY2d0c4eS95cVltdnl2WFRRSGdCb1FUSWdwTFFoaTc5dkFvR0FLYjJ4b2VNSnB5MXpURGQ5MXlsc1xuODAxbDZHc1lEN08zb2NlZG9NVUdsM0ZWTmhoRTV2UVhNUk9nTHZ0aDJwN21ZVEh6VmF6QlVlRzZHQlJ1RGF2bFxuZmYzM3dNYmNxYko3V1dKMkdZTVR6R2dxM3pZRm0rTlhKRnpTUXBXMVozRzVVUStjOHBhMVhHZHk0Q3lCM2VyU1xuZ2tEa3Y2S2tXdVpRcGpISHQvamhGSk09XG4tLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tXG4iIiIsCiAgICAgICAgICAgICJjbGllbnRfZW1haWwiOiAiZmlyZWJhc2UtYWRtaW5zZGstMWhhbTBAc2R2LWRiLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAgICAgICAgICAgImNsaWVudF9pZCI6ICIxMDUyOTM5OTQxMTkxNzI4MjUyMzUiLAogICAgICAgICAgICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLAogICAgICAgICAgICAidG9rZW5fdXJpIjogImh0dHBzOi8vb2F1dGgyLmdvb2dsZWFwaXMuY29tL3Rva2VuIiwKICAgICAgICAgICAgImF1dGhfcHJvdmlkZXJfeDUwOV9jZXJ0X3VybCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9vYXV0aDIvdjEvY2VydHMiLAogICAgICAgICAgICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS9maXJlYmFzZS1hZG1pbnNkay0xaGFtMCU0MHNkdi1kYi5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsCiAgICAgICAgICAgICJ1bml2ZXJzZV9kb21haW4iOiAiZ29vZ2xlYXBpcy5jb20iLAogICAgICAgIH0="
 
+        data = self.decode_base64(b)
         # Ensure the directory exists
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
@@ -101,6 +91,13 @@ class FirebaseSpeedSubscriberApp(VehicleApp):
             logger.info(f"Vehicle speed updated in Firebase to: {speed} km/h")
         except Exception as e:
             logger.error(f"Failed to update Firebase with speed: {e}")
+
+    def decode_base64(self, encoded_string):
+        # Decode the base64 encoded bytes
+        decoded_bytes = base64.b64decode(encoded_string)
+        # Convert bytes back to a string
+        decoded_string = decoded_bytes.decode("utf-8")
+        return decoded_string
 
 
 async def main():
