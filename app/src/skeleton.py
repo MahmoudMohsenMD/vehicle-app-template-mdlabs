@@ -1,4 +1,4 @@
-# Copyright (c) 2022-2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2024 Contributors to the Eclipse Foundation
 #
 # This program and the accompanying materials are made available under the
 # terms of the Apache License, Version 2.0 which is available at
@@ -12,116 +12,114 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""A sample skeleton vehicle app."""
-
 import asyncio
-import json
 import logging
-import signal
-
+import firebase_admin  # type: ignore
+from firebase_admin import credentials, firestore
 from vehicle import Vehicle, vehicle  # type: ignore
 from velocitas_sdk.util.log import (  # type: ignore
     get_opentelemetry_log_factory,
     get_opentelemetry_log_format,
-)
+)  # type: ignore
 from velocitas_sdk.vdb.reply import DataPointReply
-from velocitas_sdk.vehicle_app import VehicleApp, subscribe_topic
+from velocitas_sdk.vehicle_app import VehicleApp
+import json
+import os
+import base64
 
-# Configure the VehicleApp logger with the necessary log config and level.
+# Configure logger with OpenTelemetry
 logging.setLogRecordFactory(get_opentelemetry_log_factory())
 logging.basicConfig(format=get_opentelemetry_log_format())
-logging.getLogger().setLevel("DEBUG")
+logging.getLogger().setLevel("INFO")
 logger = logging.getLogger(__name__)
 
-GET_SPEED_REQUEST_TOPIC = "sampleapp/getSpeed"
-GET_SPEED_RESPONSE_TOPIC = "sampleapp/getSpeed/response"
-DATABROKER_SUBSCRIPTION_TOPIC = "sampleapp/currentSpeed"
+# Firebase setup
 
 
-class SampleApp(VehicleApp):
+# MQTT topic configuration
+VEHICLE_SPEED_TOPIC = "vehicle/speed"
+
+
+class FirebaseSpeedSubscriberApp(VehicleApp):
     """
-    Sample skeleton vehicle app.
-
-    The skeleton subscribes to a getSpeed MQTT topic
-    to listen for incoming requests to get
-    the current vehicle speed and publishes it to
-    a response topic.
-
-    It also subcribes to the VehicleDataBroker
-    directly for updates of the
-    Vehicle.Speed signal and publishes this
-    information via another specific MQTT topic
+    FirebaseSpeedSubscriberApp listens for speed data on the MQTT topic "vehicle/speed"
+    and writes it to Firebase Firestore.
     """
 
     def __init__(self, vehicle_client: Vehicle):
-        # SampleApp inherits from VehicleApp.
         super().__init__()
-        self.Vehicle = vehicle_client
+        self.vehicle = vehicle_client
+        self.create_firebase_service_account_json()
+        cred = credentials.Certificate("app/src/firebase/admin_cred.json")
+        firebase_admin.initialize_app(cred)
+        self.db = firestore.client()
 
     async def on_start(self):
-        """Run when the vehicle app starts"""
-        # This method will be called by the SDK when the connection to the
-        # Vehicle DataBroker is ready.
-        # Here you can subscribe for the Vehicle Signals update (e.g. Vehicle Speed).
-        await self.Vehicle.Speed.subscribe(self.on_speed_change)
-
-    async def on_speed_change(self, data: DataPointReply):
-        """The on_speed_change callback, this will be executed when receiving a new
-        vehicle signal updates."""
-        # Get the current vehicle speed value from the received DatapointReply.
-        # The DatapointReply containes the values of all subscribed DataPoints of
-        # the same callback.
-        vehicle_speed = data.get(self.Vehicle.Speed).value
-
-        # Do anything with the received value.
-        # Example:
-        # - Publishes current speed to MQTT Topic (i.e. DATABROKER_SUBSCRIPTION_TOPIC).
-        await self.publish_event(
-            DATABROKER_SUBSCRIPTION_TOPIC,
-            json.dumps({"speed": vehicle_speed}),
+        """This method is called when the app starts."""
+        logger.info(
+            "FirebaseSpeedSubscriberApp started and waiting for speed updates on MQTT topic..."
         )
+        await self.vehicle.Speed.subscribe(self.on_speed_changed)
 
-    @subscribe_topic(GET_SPEED_REQUEST_TOPIC)
-    async def on_get_speed_request_received(self, data: str) -> None:
-        """The subscribe_topic annotation is used to subscribe for incoming
-        PubSub events, e.g. MQTT event for GET_SPEED_REQUEST_TOPIC.
-        """
+    def create_firebase_service_account_json(self):
+        file_path = "app/src/firebase/admin_cred.json"
 
-        # Use the logger with the preferred log level (e.g. debug, info, error, etc)
-        logger.debug(
-            "PubSub event for the Topic: %s -> is received with the data: %s",
-            GET_SPEED_REQUEST_TOPIC,
-            data,
-        )
+        # Check if the file already exists
+        if os.path.exists(file_path):
+            print(f"{file_path} already exists. Skipping creation.")
+            os.remove(file_path)
 
-        # Getting current speed from VehicleDataBroker using the DataPoint getter.
-        vehicle_speed = (await self.Vehicle.Speed.get()).value
+        b = "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAic2R2LWRiIiwKICAicHJpdmF0ZV9rZXlfaWQiOiAiNjIzZDgwN2E5NDQ4N2VkNDE0MTMzMzZlNTA1N2U1MzJjNDY5OGQ5NCIsCiAgImNsaWVudF9lbWFpbCI6ICJmaXJlYmFzZS1hZG1pbnNkay0xaGFtMEBzZHYtZGIuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLAogICJjbGllbnRfaWQiOiAiMTA1MjkzOTk0MTE5MTcyODI1MjM1IiwKICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLAogICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9vYXV0aDIuZ29vZ2xlYXBpcy5jb20vdG9rZW4iLAogICJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzIiwKICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS9maXJlYmFzZS1hZG1pbnNkay0xaGFtMCU0MHNkdi1kYi5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsCiAgInVuaXZlcnNlX2RvbWFpbiI6ICJnb29nbGVhcGlzLmNvbSIKfQo="
+        data = self.decode_base64(b)
+        data = json.loads(data)
 
-        # Do anything with the speed value.
-        # Example:
-        # - Publishes the vehicle speed to MQTT topic (i.e. GET_SPEED_RESPONSE_TOPIC).
-        await self.publish_event(
-            GET_SPEED_RESPONSE_TOPIC,
-            json.dumps(
-                {
-                    "result": {
-                        "status": 0,
-                        "message": f"""Current Speed = {vehicle_speed}""",
-                    },
-                }
-            ),
-        )
+        # Retrieve environment variables and replace \n to make it an actual newline
+        key1 = os.getenv("FBKEY", "").replace("\\n", "\n")
+        key2 = os.getenv("FBKEY2", "").replace("\\n", "\n")
+        fb_id = os.getenv("FB_PRIVATE_ID", "")
+
+        # Concatenate the keys into a single private key
+        private_key = key1 + key2
+
+        # Insert the values into the JSON structure
+        data["private_key_id"] = fb_id
+        data["private_key"] = private_key
+
+        print(data)
+        # Ensure the directory exists
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        with open(file_path, "w") as file:
+            json.dump(data, file, indent=4)
+        print(f"{file_path} has been created.")
+
+    async def on_speed_changed(self, data: DataPointReply):
+        speed = data.get(self.vehicle.Speed).value
+        await self.update_speed_in_firebase(speed)
+
+    async def update_speed_in_firebase(self, speed):
+        """Updates the latest vehicle speed in Firebase Firestore."""
+        try:
+            doc_ref = self.db.collection("SDV").document("Vehicle")
+            doc_ref.update({"speed": speed})
+            logger.info(f"Vehicle speed updated in Firebase to: {speed} km/h")
+        except Exception as e:
+            logger.error(f"Failed to update Firebase with speed: {e}")
+
+    def decode_base64(self, encoded_string):
+        # Decode the base64 encoded bytes
+        decoded_bytes = base64.b64decode(encoded_string)
+        # Convert bytes back to a string
+        decoded_string = decoded_bytes.decode("utf-8")
+        return decoded_string
 
 
 async def main():
-    """Main function"""
-    logger.info("Starting SampleApp...")
-    # Constructing SampleApp and running it.
-    vehicle_app = SampleApp(vehicle)
+    """Main entry point for the Vehicle App."""
+    logger.info("Starting FirebaseSpeedSubscriberApp...")
+    vehicle_app = FirebaseSpeedSubscriberApp(vehicle)
     await vehicle_app.run()
 
 
-LOOP = asyncio.get_event_loop()
-LOOP.add_signal_handler(signal.SIGTERM, LOOP.stop)
-LOOP.run_until_complete(main())
-LOOP.close()
+if __name__ == "__main__":
+    asyncio.run(main())
